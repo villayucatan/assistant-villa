@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Assistant Spa</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #fafafa;
+      color: #444;
+      padding: 2rem;
+      max-width: 700px;
+      margin: auto;
+    }
+
+    h1 {
+      color: #2a9d8f;
+      font-size: 1.8rem;
+    }
+
+    #chatbox {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      height: 450px;
+      overflow-y: auto;
+      margin-bottom: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .user {
+      color: #264653;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .bot {
+      color: #555;
+      margin-bottom: 1.5rem;
+      white-space: pre-line;
+    }
+
+    input[type="text"] {
+      width: 68%;
+      padding: 0.7rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 28%;
+      padding: 0.7rem;
+      font-size: 1rem;
+      background-color: #2a9d8f;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-left: 4%;
+    }
+
+    button:hover {
+      background-color: #21867a;
+    }
+
+    a {
+      color: #e76f51;
+      text-decoration: underline;
+    }
+
+    strong {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>👋 Bienvenue dans votre assistant Spa personnalisé</h1>
+  <p>Posez votre question, et je vous répondrai avec plaisir 💬</p>
+
+  <div id="chatbox"></div>
+
+  <input type="text" id="userInput" placeholder="Ex : Quels sont vos tarifs pour 4 personnes ?" />
+  <button onclick="envoyer()">Envoyer</button>
+
+  <script>
+    async function envoyer() {
+      const input = document.getElementById("userInput");
+      const message = input.value.trim();
+      if (!message) return;
+
+      const chatbox = document.getElementById("chatbox");
+      chatbox.innerHTML += `<div class="user">👤 Vous : ${message}</div>`;
+
+      input.value = "";
+
+      const response = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+
+      const data = await response.json();
+      let reply = data.reply || "⚠️ Une erreur est survenue.";
+
+      // Mise en forme : gras, liens, retours à la ligne espacés
+      reply = reply
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/(?:\r\n|\r|\n){2,}/g, '<br><br>')
+        .replace(/(?:\r\n|\r|\n)/g, '<br>')
+        .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>');
+
+      chatbox.innerHTML += `<div class="bot">🤖 Assistant : ${reply}</div>`;
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+  </script>
+</body>
+</html>
