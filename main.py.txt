@@ -1,0 +1,56 @@
+from flask import Flask, request, jsonify, send_file
+import openai
+import os
+import uuid
+
+app = Flask(__name__)
+
+# Configuration
+openai.api_key = os.getenv("OPENAI_API_KEY")
+assistant_id = os.getenv("OPENAI_ASSISTANT_ID")
+
+# Stockage temporaire des threads
+threads = {}
+
+@app.route("/")
+def home():
+    return send_file("static/index.html")
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    message = data.get("message")
+
+    # Crée un thread par utilisateur si non existant
+    user_id = "client"  # tu peux remplacer par autre chose si besoin
+    if user_id not in threads:
+        thread = openai.beta.threads.create()
+        threads[user_id] = thread.id
+
+    # Ajout du message à la conversation
+    openai.beta.threads.messages.create(
+        thread_id=threads[user_id],
+        role="user",
+        content=message
+    )
+
+    # Lance l’assistant
+    run = openai.beta.threads.runs.create(
+        thread_id=threads[user_id],
+        assistant_id=assistant_id
+    )
+
+    # Attend que le run soit terminé
+    while True:
+        run_status = openai.beta.threads.runs.retrieve(thread_id=threads[user_id], run_id=run.id)
+        if run_status.status == "completed":
+            break
+
+    # Récupère la dernière réponse
+    messages = openai.beta.threads.messages.list(thread_id=threads[user_id])
+    reply = messages.data[0].content[0].text.value
+
+    return jsonify({"reply": reply})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=81)
